@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animasi Sepak Bola Custom</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Latar Belakang Game */
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #0a2e1d 0%, #000502 100%);
+        }
+
+        canvas {
+            display: none;
+            background: transparent;
+            box-shadow: 0 0 60px rgba(0, 255, 170, 0.15);
+            border: 1px solid rgba(0, 255, 170, 0.2);
+            border-radius: 12px;
+        }
+
+        /* --- UI Pengaturan (Setup Screen) --- */
+        #setup-screen {
+            background: rgba(5, 15, 10, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 255, 170, 0.3);
+            box-shadow: 0 0 50px rgba(0, 255, 170, 0.2), inset 0 0 20px rgba(0, 255, 170, 0.05);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            z-index: 10;
+        }
+
+        #setup-screen h1 {
+            margin-top: 0;
+            font-size: 24px;
+            color: #00ffaa;
+            text-shadow: 0 0 15px rgba(0, 255, 170, 0.6);
+            letter-spacing: 1px;
+        }
+
+        .team-input-group {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: left;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .team-input-group h3 { margin: 0 0 10px 0; font-size: 16px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+
+        input[type="text"] {
+            width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #2e4d32; color: white; border-radius: 6px; outline: none; font-size: 14px;
+        }
+        input[type="text"]:focus { border-color: #00ffaa; box-shadow: 0 0 10px rgba(0, 255, 170, 0.2); }
+
+        input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 6px; cursor: pointer; background: none; padding: 0; }
+        .color-label { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #94a3b8; }
+
+        .btn {
+            width: 100%; padding: 15px;
+            border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            transition: 0.3s; margin-top: 10px; text-transform: uppercase;
+        }
+
+        #start-btn {
+            background: rgba(0, 255, 170, 0.1); color: #00ffaa;
+            border: 1px solid #00ffaa;
+        }
+        #start-btn:hover { background: rgba(0, 255, 170, 0.2); }
+
+        #record-btn {
+            background: linear-gradient(45deg, #ff0055, #ff0000); color: white;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+        }
+        #record-btn:hover {
+            box-shadow: 0 0 25px rgba(255, 0, 85, 0.8); transform: translateY(-2px);
+        }
+
+        /* Tombol Stop & Download Floating */
+        #stop-record-btn {
+            display: none; position: absolute; top: 20px; right: 20px; z-index: 100;
+            background: rgba(255, 0, 0, 0.8); color: white; border: 1px solid white;
+            padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;
+            backdrop-filter: blur(5px); transition: 0.3s;
+        }
+        #stop-record-btn:hover { background: red; box-shadow: 0 0 15px red; }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- Tombol Berhenti Rekam (Muncul saat merekam) -->
+    <button id="stop-record-btn">⏹ Unduh Video</button>
+
+    <!-- Layar Input Awal -->
+    <div id="setup-screen">
+        <h1>PENGATURAN PERTANDINGAN</h1>
+        
+        <div class="team-input-group" style="border-left: 4px solid #fcee0a;">
+            <h3 style="color: #fcee0a;">Tim 1 (Tuan Rumah)</h3>
+            <div class="input-row">
+                <input type="text" id="t1-name" placeholder="Nama Tim" value="Dortmund">
+                <input type="text" id="t1-abbr" placeholder="Skt" value="BVB" maxlength="3" style="width: 60px;">
+            </div>
+            <div class="color-label">
+                <input type="color" id="t1-color" value="#fcee0a"> Pilih Warna Tim
+            </div>
+        </div>
+
+        <div class="team-input-group" style="border-left: 4px solid #ffffff;">
+            <h3 style="color: #ffffff;">Tim 2 (Tamu)</h3>
+            <div class="input-row">
+                <input type="text" id="t2-name" placeholder="Nama Tim" value="Real Madrid">
+                <input type="text" id="t2-abbr" placeholder="Skt" value="RMA" maxlength="3" style="width: 60px;">
+            </div>
+            <div class="color-label">
+                <input type="color" id="t2-color" value="#ffffff"> Pilih Warna Tim
+            </div>
+        </div>
+
+        <button id="start-btn" class="btn">▶ Hanya Main (Tanpa Rekam)</button>
+        <button id="record-btn" class="btn">🔴 Mulai & Rekam Video</button>
+    </div>
+
+    <!-- Canvas Permainan -->
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const setupScreen = document.getElementById('setup-screen');
+    const startBtn = document.getElementById('start-btn');
+    const recordBtn = document.getElementById('record-btn');
+    const stopRecordBtn = document.getElementById('stop-record-btn');
+
+    // Data Tim & Game
+    let t1 = { name: 'Dortmund', abbr: 'BVB', color: '#fcee0a' };
+    let t2 = { name: 'Real Madrid', abbr: 'RMA', color: '#ffffff' };
+    let matchTitle = "Dortmund vs Real Madrid";
+
+    function resizeCanvas() {
+        const targetRatio = 9 / 16;
+        let w = window.innerWidth * 0.95;
+        let h = window.innerHeight * 0.95;
+        if (w / h > targetRatio) { w = h * targetRatio; } else { h = w / targetRatio; }
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+        canvas.width = 540;
+        canvas.height = 960;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Variabel Permainan
+    const cx = 540 / 2; const cy = 960 / 2; const fieldRadius = 220;
+    let menit = 1; let skorTim1 = 0; let skorTim2 = 0;
+    let lastTouchedBy = ''; let startTime = null; let isGameOver = false;
+    const GAME_DURATION_MS = 60000;
+
+    let isGoalPaused = false; let totalPausedTime = 0; let goalPauseStart = 0;
+    let particles = []; let scorerName = "";
+
+    let ball = { x: cx, y: cy, radius: 8, dx: 4, dy: -5, color: '#ffffff', speed: 6, isHidden: false };
+    let teams = []; let goalAngle = 0; const goalWidth = 0.35;
+
+    // --- CACHE BACKGROUND (OPTIMASI PERFORMA HP) ---
+    const bgCanvas = document.createElement('canvas');
+    bgCanvas.width = 540;
+    bgCanvas.height = 960;
+    const bgCtx = bgCanvas.getContext('2d', { alpha: false }); // alpha false agar rendering lebih cepat
+    
+    function initBackground() {
+        // Latar belakang gradien utama
+        let bgGradient = bgCtx.createRadialGradient(cx, cy, 0, cx, cy, 960);
+        bgGradient.addColorStop(0, '#0a2e1d'); bgGradient.addColorStop(1, '#000502');
+        bgCtx.fillStyle = bgGradient; bgCtx.fillRect(0, 0, 540, 960);
+
+        // Gambar Grid Holografik
+        bgCtx.strokeStyle = 'rgba(0, 255, 170, 0.08)'; bgCtx.lineWidth = 1;
+        for (let i = 0; i < 540; i += 40) { bgCtx.beginPath(); bgCtx.moveTo(i, 0); bgCtx.lineTo(i, 960); bgCtx.stroke(); }
+        for (let j = 0; j < 960; j += 40) { bgCtx.beginPath(); bgCtx.moveTo(0, j); bgCtx.lineTo(540, j); bgCtx.stroke(); }
+
+        // Gambar Vignette Gelap
+        let vignette = bgCtx.createRadialGradient(cx, cy, fieldRadius * 0.6, cx, cy, 540 * 0.9);
+        vignette.addColorStop(0, 'rgba(0, 0, 0, 0)'); vignette.addColorStop(1, 'rgba(0, 8, 4, 0.95)');
+        bgCtx.fillStyle = vignette; bgCtx.fillRect(0, 0, 540, 960);
+    }
+    initBackground(); // Render background hanya sekali
+
+    // --- VARIABEL PEREKAM (MEDIA RECORDER) ---
+    let mediaRecorder;
+    let recordedChunks = [];
+    let isRecording = false;
+
+    // --- FUNGSI PEREKAMAN ---
+    function startRecording() {
+        recordedChunks = [];
+        const stream = canvas.captureStream(30); // Turunkan ke 30 FPS agar hasil rekaman tidak patah-patah/berat di HP
+        
+        // Gunakan codec ringan & set bitrate 5Mbps agar kualitas rekaman jernih dan tidak berantakan
+        let options = { mimeType: 'video/webm; codecs=vp8', videoBitsPerSecond: 5000000 }; 
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/webm', videoBitsPerSecond: 5000000 };
+        }
+        
+        try {
+            mediaRecorder = new MediaRecorder(stream, options);
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = saveVideo;
+            mediaRecorder.start();
+            isRecording = true;
+            stopRecordBtn.style.display = 'block';
+        } catch (e) {
+            alert('Browser Anda tidak mendukung perekaman langsung dari Canvas.');
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            stopRecordBtn.style.display = 'none';
+        }
+    }
+
+    function saveVideo() {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `${t1.abbr}_vs_${t2.abbr}_Animasi_Bola.webm`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    stopRecordBtn.addEventListener('click', stopRecording);
+
+    // --- INISIALISASI PERMAINAN ---
+    function initGame(record) {
+        t1.name = document.getElementById('t1-name').value || 'Tim 1';
+        t1.abbr = document.getElementById('t1-abbr').value.toUpperCase().substring(0, 3) || 'T1';
+        t1.color = document.getElementById('t1-color').value;
+
+        t2.name = document.getElementById('t2-name').value || 'Tim 2';
+        t2.abbr = document.getElementById('t2-abbr').value.toUpperCase().substring(0, 3) || 'T2';
+        t2.color = document.getElementById('t2-color').value;
+
+        matchTitle = `${t1.name} vs ${t2.name}`;
+        
+        teams = [
+            { id: t1.abbr, x: cx - 60, y: cy + 60, radius: 25, color: t1.color, text: t1.abbr, dx: 2.8, dy: -2.1, speed: 3.5 },
+            { id: t2.abbr, x: cx + 60, y: cy - 60, radius: 25, color: t2.color, text: t2.abbr, dx: -2.1, dy: 2.8, speed: 3.5 }
+        ];
+
+        skorTim1 = 0; skorTim2 = 0; menit = 1; isGameOver = false;
+        startTime = null; totalPausedTime = 0; lastTouchedBy = t1.abbr; ball.color = t1.color;
+
+        setupScreen.style.display = 'none';
+        canvas.style.display = 'block';
+        resizeCanvas();
+
+        if (record) startRecording();
+
+        resetBall();
+        animate();
+    }
+
+    startBtn.addEventListener('click', () => initGame(false));
+    recordBtn.addEventListener('click', () => initGame(true));
+
+    // --- FUNGSI MENGGAMBAR ---
+    function drawGrid() {
+        // Gunakan gambar latar belakang yang sudah di-cache (Sangat mengurangi lag di HP)
+        ctx.drawImage(bgCanvas, 0, 0);
+    }
+
+    function drawField() {
+        let pulse = Math.abs(Math.sin(Date.now() / 600));
+        ctx.beginPath(); ctx.arc(cx, cy, fieldRadius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 255, 170, ${0.02 + pulse * 0.03})`; ctx.fill(); 
+
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
+        ctx.shadowBlur = 10 + (pulse * 5); ctx.shadowColor = '#00ffaa'; ctx.stroke(); ctx.shadowBlur = 0; // Kurangi blur
+
+        ctx.beginPath(); ctx.arc(cx, cy, fieldRadius - 8, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 255, 170, 0.3)'; ctx.lineWidth = 1; ctx.stroke();
+
+        ctx.beginPath(); ctx.arc(cx, cy, 45, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 255, 170, 0.4)'; ctx.lineWidth = 2; 
+        ctx.shadowBlur = 5; ctx.shadowColor = '#00ffaa'; ctx.stroke(); ctx.shadowBlur = 0;
+
+        ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fillStyle = '#00ffaa'; ctx.fill();
+    }
+
+    function drawGoals() {
+        if (!isGameOver && !isGoalPaused) { goalAngle += 0.004; }
+        ctx.strokeStyle = '#ffffff'; ctx.shadowColor = '#ffffff';
+        ctx.beginPath(); ctx.arc(cx, cy, fieldRadius, goalAngle - goalWidth/2, goalAngle + goalWidth/2);
+        ctx.lineWidth = 5; ctx.shadowBlur = 15; ctx.stroke();
+        
+        ctx.lineWidth = 2; const netDepth = 35;
+        const p1X = cx + Math.cos(goalAngle - goalWidth/2) * fieldRadius; const p1Y = cy + Math.sin(goalAngle - goalWidth/2) * fieldRadius;
+        const p2X = cx + Math.cos(goalAngle + goalWidth/2) * fieldRadius; const p2Y = cy + Math.sin(goalAngle + goalWidth/2) * fieldRadius;
+        const b1X = cx + Math.cos(goalAngle - goalWidth/2) * (fieldRadius + netDepth); const b1Y = cy + Math.sin(goalAngle - goalWidth/2) * (fieldRadius + netDepth);
+        const b2X = cx + Math.cos(goalAngle + goalWidth/2) * (fieldRadius + netDepth); const b2Y = cy + Math.sin(goalAngle + goalWidth/2) * (fieldRadius + netDepth);
+
+        ctx.beginPath(); ctx.moveTo(p1X, p1Y); ctx.lineTo(b1X, b1Y); ctx.lineTo(b2X, b2Y); ctx.lineTo(p2X, p2Y); ctx.stroke();
+
+        ctx.lineWidth = 1; ctx.globalAlpha = 0.6;
+        for (let d = 5; d < netDepth; d += 6) {
+            ctx.beginPath(); ctx.arc(cx, cy, fieldRadius + d, goalAngle - goalWidth/2, goalAngle + goalWidth/2); ctx.stroke();
+        }
+        for (let a = goalAngle - goalWidth/2 + 0.04; a < goalAngle + goalWidth/2; a += 0.04) {
+            ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * fieldRadius, cy + Math.sin(a) * fieldRadius);
+            ctx.lineTo(cx + Math.cos(a) * (fieldRadius + netDepth), cy + Math.sin(a) * (fieldRadius + netDepth)); ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0; ctx.shadowBlur = 0;
+    }
+
+    function drawBall() {
+        if (ball.isHidden) return;
+        ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = ball.color; ctx.shadowBlur = 10; ctx.shadowColor = ball.color; // Kurangi shadow blur dari 20 ke 10
+        ctx.fill(); ctx.shadowBlur = 0;
+    }
+
+    function drawTeams() {
+        teams.forEach(team => {
+            ctx.beginPath(); ctx.arc(team.x, team.y, team.radius, 0, Math.PI * 2);
+            ctx.fillStyle = team.color; ctx.fill(); 
+            ctx.lineWidth = 3; ctx.strokeStyle = team.color;
+            ctx.shadowBlur = 15; ctx.shadowColor = team.color; ctx.stroke(); 
+            ctx.shadowBlur = 0; ctx.fillStyle = '#000000'; 
+            ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(team.text, team.x, team.y);
+        });
+    }
+
+    function drawUI() {
+        ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 8; ctx.shadowColor = '#ffffff';
+        ctx.font = 'bold 36px Arial'; ctx.textAlign = 'center';
+        ctx.fillText(matchTitle, cx, 120); 
+        
+        ctx.font = '30px Arial';
+        ctx.fillText(isGameOver ? "90' (FT)" : menit + "'", cx, 170);
+
+        ctx.font = 'bold 40px Arial';
+        ctx.fillStyle = t1.color; ctx.shadowColor = t1.color;
+        ctx.fillText(`${t1.abbr} ${skorTim1}`, cx - 80, canvas.height - 100);
+        ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#ffffff';
+        ctx.fillText(`-`, cx, canvas.height - 100);
+        ctx.fillStyle = t2.color; ctx.shadowColor = t2.color;
+        ctx.fillText(`${skorTim2} ${t2.abbr}`, cx + 80, canvas.height - 100);
+        
+        if (isGoalPaused) {
+            ctx.font = 'bold 56px Arial';
+            ctx.fillStyle = (scorerName === t1.abbr) ? t1.color : t2.color;
+            ctx.shadowBlur = 20; ctx.shadowColor = ctx.fillStyle;
+            if (Math.sin(Date.now() / 80) > 0) ctx.fillText(`GOAL ${scorerName}!`, cx, cy - 30);
+        }
+        
+        // Indikator Perekaman (Titik Merah Berkedip)
+        if (isRecording) {
+            ctx.shadowBlur = 0;
+            ctx.font = '16px Arial'; ctx.fillStyle = 'red';
+            if (Math.floor(Date.now() / 500) % 2 === 0) {
+                ctx.beginPath(); ctx.arc(30, 30, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white'; ctx.textAlign = 'left';
+                ctx.fillText("REC", 45, 36);
+            }
+        }
+        ctx.shadowBlur = 0;
+    }
+
+    // --- LOGIKA FISIKA ---
+    function resetBall() {
+        ball.x = cx; ball.y = cy;
+        let angle = Math.random() * Math.PI * 2;
+        ball.dx = Math.cos(angle) * ball.speed; ball.dy = Math.sin(angle) * ball.speed;
+    }
+
+    function updatePhysics() {
+        if (isGameOver) return;
+        if (!startTime) startTime = Date.now();
+        if (isGoalPaused) return;
+
+        let elapsed = Date.now() - startTime - totalPausedTime;
+        if (elapsed >= GAME_DURATION_MS) {
+            menit = 90; isGameOver = true; 
+            if (isRecording) stopRecording(); // Otomatis simpan video saat game over
+            return;
+        } else {
+            menit = Math.floor(1 + (elapsed / GAME_DURATION_MS) * 89);
+        }
+
+        ball.x += ball.dx; ball.y += ball.dy;
+
+        let dx = ball.x - cx; let dy = ball.y - cy;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance + ball.radius >= fieldRadius) {
+            let ballAngle = Math.atan2(dy, dx);
+            if (ballAngle < 0) ballAngle += Math.PI * 2; 
+            let gAngle = goalAngle % (Math.PI * 2);
+            if (gAngle < 0) gAngle += Math.PI * 2;
+            let diff = Math.abs(ballAngle - gAngle);
+            if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+            if (diff < goalWidth / 2) {
+                if (lastTouchedBy === t1.abbr) { skorTim1++; scorerName = t1.abbr; } 
+                else { skorTim2++; scorerName = t2.abbr; }
+                
+                createParticles(ball.x, ball.y, ball.color);
+                isGoalPaused = true; goalPauseStart = Date.now(); ball.isHidden = true; 
+                
+                setTimeout(() => {
+                    isGoalPaused = false; totalPausedTime += Date.now() - goalPauseStart;
+                    ball.isHidden = false; resetBall();
+                }, 2500); 
+                return; 
+            }
+
+            let normalX = dx / distance; let normalY = dy / distance;
+            let dotProduct = ball.dx * normalX + ball.dy * normalY;
+            ball.dx = ball.dx - 2 * dotProduct * normalX; ball.dy = ball.dy - 2 * dotProduct * normalY;
+            
+            let randAngle = (Math.random() - 0.5) * 0.15; 
+            let newDx = ball.dx * Math.cos(randAngle) - ball.dy * Math.sin(randAngle);
+            let newDy = ball.dx * Math.sin(randAngle) + ball.dy * Math.cos(randAngle);
+            ball.dx = newDx; ball.dy = newDy;
+
+            let currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+            if (currentSpeed > 0) { ball.dx = (ball.dx / currentSpeed) * ball.speed; ball.dy = (ball.dy / currentSpeed) * ball.speed; }
+            ball.x = cx + normalX * (fieldRadius - ball.radius); ball.y = cy + normalY * (fieldRadius - ball.radius);
+        }
+
+        let tA = teams[0]; let tB = teams[1];
+        let dxT = tB.x - tA.x; let dyT = tB.y - tA.y;
+        let distT = Math.sqrt(dxT*dxT + dyT*dyT);
+        if (distT < tA.radius + tB.radius) {
+            let overlap = (tA.radius + tB.radius) - distT;
+            let nX = dxT / distT; let nY = dyT / distT;
+            tA.x -= nX * (overlap / 2); tA.y -= nY * (overlap / 2);
+            tB.x += nX * (overlap / 2); tB.y += nY * (overlap / 2);
+            
+            let v1n_initial = tA.dx * nX + tA.dy * nY; let v2n_initial = tB.dx * nX + tB.dy * nY;
+            if (v1n_initial > v2n_initial) {
+                let v1tX = tA.dx - v1n_initial * nX; let v1tY = tA.dy - v1n_initial * nY;
+                let v2tX = tB.dx - v2n_initial * nX; let v2tY = tB.dy - v2n_initial * nY;
+                tA.dx = v1tX + v2n_initial * nX; tA.dy = v1tY + v2n_initial * nY;
+                tB.dx = v2tX + v1n_initial * nX; tB.dy = v2tY + v1n_initial * nY;
+                
+                let s1 = Math.sqrt(tA.dx*tA.dx + tA.dy*tA.dy); if (s1>0) { tA.dx = (tA.dx/s1)*tA.speed; tA.dy = (tA.dy/s1)*tA.speed; }
+                let s2 = Math.sqrt(tB.dx*tB.dx + tB.dy*tB.dy); if (s2>0) { tB.dx = (tB.dx/s2)*tB.speed; tB.dy = (tB.dy/s2)*tB.speed; }
+            }
+        }
+
+        teams.forEach(team => {
+            team.x += team.dx; team.y += team.dy;
+            let teamDx = team.x - cx; let teamDy = team.y - cy;
+            let teamDist = Math.sqrt(teamDx * teamDx + teamDy * teamDy);
+            if (teamDist + team.radius > fieldRadius) {
+                let nX = teamDx / teamDist; let nY = teamDy / teamDist;
+                team.x = cx + nX * (fieldRadius - team.radius); team.y = cy + nY * (fieldRadius - team.radius);
+                let dot = team.dx * nX + team.dy * nY;
+                team.dx -= 2 * dot * nX; team.dy -= 2 * dot * nY;
+
+                let randAngleToken = (Math.random() - 0.5) * 0.2; 
+                let nDx = team.dx * Math.cos(randAngleToken) - team.dy * Math.sin(randAngleToken);
+                let nDy = team.dx * Math.sin(randAngleToken) + team.dy * Math.cos(randAngleToken);
+                team.dx = nDx; team.dy = nDy;
+
+                let tSpeed = Math.sqrt(team.dx*team.dx + team.dy*team.dy);
+                if (tSpeed>0) { team.dx = (team.dx/tSpeed)*team.speed; team.dy = (team.dy/tSpeed)*team.speed; }
+            }
+            let bDx = ball.x - team.x; let bDy = ball.y - team.y;
+            let bDist = Math.sqrt(bDx * bDx + bDy * bDy);
+            if (bDist < ball.radius + team.radius) {
+                let overlap = (ball.radius + team.radius) - bDist;
+                let nX = bDx / bDist; let nY = bDy / bDist;
+                ball.x += nX * overlap; ball.y += nY * overlap;
+                let rvx = ball.dx - team.dx; let rvy = ball.dy - team.dy;
+                let velAlongNormal = rvx * nX + rvy * nY;
+                if (velAlongNormal < 0) { ball.dx -= 2 * velAlongNormal * nX; ball.dy -= 2 * velAlongNormal * nY; }
+                let currentSpeed = Math.sqrt(ball.dx*ball.dx + ball.dy*ball.dy);
+                if (currentSpeed>0) { ball.dx = (ball.dx/currentSpeed)*ball.speed; ball.dy = (ball.dy/currentSpeed)*ball.speed; }
+                lastTouchedBy = team.id; ball.color = team.color;
+            }
+        });
+    }
+
+    // --- EFEK PARTIKEL ---
+    function hexToRgb(hex) {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 255, 255';
+    }
+    function createParticles(x, y, color) {
+        let rgbColor = hexToRgb(color);
+        for(let i=0; i<50; i++) { // Kurangi jumlah partikel ledakan dari 100 ke 50 (optimasi performa HP)
+            let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 8 + 2;
+            particles.push({ x: x, y: y, dx: Math.cos(angle) * speed, dy: Math.sin(angle) * speed, radius: Math.random() * 4 + 1.5, color: rgbColor, life: 1.0, decay: Math.random() * 0.015 + 0.01 });
+        }
+    }
+    function drawParticles() {
+        for(let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.dx; p.y += p.dy; p.life -= p.decay; p.dx *= 0.96; p.dy *= 0.96;
+            if (p.life <= 0) { particles.splice(i, 1); } 
+            else {
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${p.color}, ${p.life})`; 
+                // Hapus shadowBlur pada partikel agar beban grafis turun drastis
+                ctx.fill();
+            }
+        }
+    }
+
+    // --- LOOP UTAMA ---
+    function animate() {
+        // ctx.clearRect() dihilangkan karena drawGrid sekarang merekatkan gambar padat tanpa transparansi (Lebih Cepat!)
+        drawGrid(); drawField(); drawGoals();
+        updatePhysics(); drawBall(); drawTeams();
+        drawParticles(); drawUI();
+        requestAnimationFrame(animate);
+    }
+</script>
+
+</body>
+</html>
